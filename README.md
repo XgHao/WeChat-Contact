@@ -11,7 +11,8 @@
 - win+c 运行
 - 然后再提示框中输入要导出的微信好友数，微信好友数可以通讯录->通讯录管理中查询
 - win+esc 退出
-   
+  
+![微信好友数](https://github.com/XgHao/WeChat-Contact/blob/main/pic/contact.png?raw=true)
 # 注意事项
 导出为Excel电子表格，运行前请先安装安装Office，WPS没有经过验证不保证可行性。
 
