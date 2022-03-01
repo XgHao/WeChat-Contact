@@ -47,16 +47,16 @@ msgbox("1.win+c开始导出`r`n2.win+ecs暂停", "引导", "OK")
 
 		; excel
 		path := StrReplace(Format("{1}\微信好友记录", A_WorkingDir), "\\", "\") ;路径
-		if !DirExist(path)
+		if !DirExist(path) ;不存在该路径则创建
 			DirCreate path
 		objExcel := ""
 		try 
 		{
-			objExcel := ComObject("Excel.Application")
-			objExcel.Workbooks.Add
-			SetTitle(&objExcel)
+			objExcel := ComObject("Excel.Application") ;创建Excel-COM对象
+			objExcel.Workbooks.Add ;创建工作簿
+			SetTitle(&objExcel) ;设置Excel标题
 
-			errorCount := 0 ;失败次数，当连续5次失败后，视为导出完成
+			errorCount := 0 ;失败次数，当连续3次失败后，视为导出完成
 			row := 2 ;第一行为标题，所以这里从第二行开始
 			loop
 			{
@@ -79,7 +79,7 @@ msgbox("1.win+c开始导出`r`n2.win+ecs暂停", "引导", "OK")
 			}	
 			
 			fileName := Format("{1}\{2}.xlsx", path, A_Now) ;文件名
-			objExcel.ActiveWorkbook.SaveAs(fileName)
+			objExcel.ActiveWorkbook.SaveAs(fileName) ;保存文件
 		}
 		catch as e
 		{
@@ -116,39 +116,39 @@ SetTitle(&objExcel)
 ;获取联系人详情
 GetContactDetail()
 {
-	Loop 3
+	Loop 3	;循环3次，若3次还没有复制到内容视为失败
 	{
-		mouseclickdrag "L", _contactDetailLowRightX, _contactDetailLowRightY, _contactDetailUpLeftX, _contactDetailUpLeftY
+		mouseclickdrag "L", _contactDetailLowRightX, _contactDetailLowRightY, _contactDetailUpLeftX, _contactDetailUpLeftY ;选中联系人信息详情
 		A_Clipboard := "" ;清空剪切板
-		Sleep 20
+		Sleep 50
 		sendinput "^c"	;复制
 		if ClipWait(0.1, 1)	;超时抛出异常
 			Break
 	}
 	
-	contactMap := Map()
-	wechatDetailArr := StrSplit(A_Clipboard,"`n")
+	contactMap := Map()	;新建Map对象，存放联系人信息
+	wechatDetailArr := StrSplit(A_Clipboard, "`n") ;通过换行符进行分割
+
 	len := wechatDetailArr.Length
-    if (len = 4) ; 没有签名
+	if (len = 5)
     {
         contactMap[1] := wechatDetailArr[1] ;昵称
-        contactMap[2] := "" ;签名
-        contactMap[3] := wechatDetailArr[2] ;地区
-        contactMap[4] := wechatDetailArr[3] ;微信ID
-        contactMap[5] := wechatDetailArr[4] ;来源
+        contactMap[2] := wechatDetailArr[2] ;签名
+        contactMap[3] := wechatDetailArr[3] ;地区
+        contactMap[4] := wechatDetailArr[4] ;微信ID
+        contactMap[5] := wechatDetailArr[5] ;来源
     }
-    else if (len = 5)
+    else if (len = 4) ;没有签名的情况
     {
         contactMap[1] := wechatDetailArr[1]
-        contactMap[2] := wechatDetailArr[2]
-        contactMap[3] := wechatDetailArr[3]
-        contactMap[4] := wechatDetailArr[4]
-        contactMap[5] := wechatDetailArr[5]
+        contactMap[2] := ""
+        contactMap[3] := wechatDetailArr[2]
+        contactMap[4] := wechatDetailArr[3]
+        contactMap[5] := wechatDetailArr[4]
     }
-	else
+	else ;其余数组长度都当做失败
 	{
-		click Format("{1} {2} Middle", _contactListX, _contactListY)
-		send "{Up}"
+		MoveToNextContact()	;移动到下个联系人
 		Throw Error("The copy text is error.")	;复制文字失败
 	}
 
@@ -158,10 +158,17 @@ GetContactDetail()
 	sendinput "^a^c" ;全选
 	ClipWait(0.1, 1) ;等待0.1s超时视为无备注
 	contactMap[6] := A_Clipboard ;备注
-	click Format("{1} {2} Middle", _contactListX, _contactListY)
-	send "{Up}"
+	MoveToNextContact()	;移动到下个联系人
 
 	Return contactMap
+}
+
+;移动到下一个联系人
+MoveToNextContact()
+{
+	click Format("{1} {2} Middle", _contactListX, _contactListY)
+	send "{Up}"
+	Sleep 50 ;缓存时间等待下个联系人加载
 }
 
 ;输入联系人数
