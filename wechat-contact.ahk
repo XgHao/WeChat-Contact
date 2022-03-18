@@ -15,6 +15,7 @@ _contactListX := 150 * (A_ScreenDPI / 96) ;微信联系人列表X坐标
 _contactListY := 300 * (A_ScreenDPI / 96) ;微信联系人列表Y坐标
 _msExcelComObject := "Excel.Application" ;Ms Excel com object
 _ahkWeChatAHKClassName := "ahk_class WeChatMainWndForPC" ;微信窗口名
+_projectUrl := "https://github.com/XgHao/WeChat-Contact" ;项目地址
 
 ; 自定义异常-excel导出异常
 class ExcelExportError extends Error
@@ -73,14 +74,21 @@ msgbox("1.win+c开始导出`r`n2.win+ecs停止", "说明", "OK")
 	}
 	catch as e
 	{
-		; 关于 e 对象的更多细节, 请参阅 Error.
-		MsgBox(Type(e) " thrown!`n`nwhat: " e.what "`nfile: " e.file
-			. "`nline: " e.line "`nmessage: " e.message "`nextra: " e.extra,, 16)
+		; 错误信息
+		errorMsg := Type(e) " thrown!`n`nwhat: " e.what "`nfile: " e.file
+                . "`nline: " e.line "`nmessage: " e.message "`nextra: " e.extra
+
+		; 反馈信息	
+        Result := MsgBox("发生了错误，是否反馈？`n`n错误信息如下:`n" errorMsg, "出错了", "YesNo Icon!")
+        if Result = "Yes"
+            run _projectUrl "/issues/new"
 		Return
 	}
 
 	; 打开文件路径
 	Run "explore " path
+
+	StarMyGitHub()
 }
 
 ; 检测微信窗口是否打开
@@ -88,7 +96,7 @@ CheckWeChatWin()
 {
 	if !WinExist(_ahkWeChatAHKClassName)
 	{
-		MsgBox("未检测到微信窗口，请打开微信，按下【win+c】重新运行", "未找到微信", "OK Iconx")
+		MsgBox("未检测到微信窗口，请打开微信，按下【win+c】重新运行", "未找到微信", "OK Icon?")
 		Throw WeChatWinError("Wechat Windows Is Not Active")
 	}
 }
@@ -296,4 +304,11 @@ SaveContactToCsv(path, contactCount)
 FormatContactCsv(map)
 {
 	return Format("{1},{2},{3},{4},{5}", map[1], map[2], map[3], map[4], map[5])
+}
+
+StarMyGitHub()
+{
+	Result := MsgBox("导出成功！可在打开的文件夹中查看`n`n制作不易，若对你有帮忙请赏一个Star⭐吧", "导出成功", "YesNo Iconi")
+	if Result = "Yes"
+		run _projectUrl
 }
