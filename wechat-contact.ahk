@@ -13,93 +13,111 @@ _contactRemarkX := 488 * (A_ScreenDPI / 96) ;微信联系人备注X坐标
 _contactRemarkY := 240 * (A_ScreenDPI / 96) ;微信联系人备注X坐标
 _contactListX := 150 * (A_ScreenDPI / 96) ;微信联系人列表X坐标
 _contactListY := 300 * (A_ScreenDPI / 96) ;微信联系人列表Y坐标
+_msExcelComObject := "Excel.Application" ;Ms Excel com object
+_ahkWeChatAHKClassName := "ahk_class WeChatMainWndForPC" ;微信窗口名
+
+; 自定义异常-excel导出异常
+class ExcelExportError extends Error
+{}
+
+; 自定义异常-微信窗口异常
+class WeChatWinError extends Error
+{}
+
+; 自定义异常-用户终止操作
+class UserTerminateOperationError extends Error
+{}
 
 ; 设置优先级高，鼠标速度最快
 ProcessSetPriority "High"
 SetKeyDelay 0
 
 ;提示
-msgbox("1.win+c开始导出`r`n2.win+ecs暂停", "引导", "OK")
+msgbox("1.win+c开始导出`r`n2.win+ecs停止", "说明", "OK")
 
 ; ESC 退出
 #esc::ExitApp
 
 ; 找到微信联系信息
 #c::
-{
-	if WinExist("微信")
+{	
+	try 
 	{
-		winactivate ; 激活微信窗口
-		winmove _winLocalX,_winLocalY,_winWidth,_winHeight
-		Sleep 100
-
-		; 切换到联系人选项卡
-		click _contactLocalX, _contactLocalY
-		Sleep 100
-
-		; 定位到最后一个微信好友
-		click Format("{1} {2} Middle", _contactListX, _contactListY)
-		Sleep 100
-		send "{End}"
+		; 检测微信窗口是否打开
+		CheckWeChatWin()
 
 		; 获取微信联系人数
 		contactCount := GetContactCount()
 
-		; excel
-		path := StrReplace(Format("{1}\微信好友记录", A_WorkingDir), "\\", "\") ;路径
-		if !DirExist(path) ;不存在该路径则创建
-			DirCreate path
-		objExcel := ""
-		try 
-		{
-			objExcel := ComObject("Excel.Application") ;创建Excel-COM对象
-			objExcel.Workbooks.Add ;创建工作簿
-			SetTitle(&objExcel) ;设置Excel标题
+		; 定位微信窗口
+		SetWeChatWin()
 
-			errorCount := 0 ;失败次数，当连续3次失败后，视为导出完成
-			row := 2 ;第一行为标题，所以这里从第二行开始
-			loop
-			{
-				try
-				{
-					for key, value in GetContactDetail()
-						objExcel.Cells(row, key).Value := value
-					row++ ;插入Excel成功，自增1
-					errorCount := 0 ;成功后失败次数归零，重新计数
-				}
-				catch ; TODO 获取联系人信息失败
-				{
-					if	(++errorCount > 3) ;自增失败次数
-						Break ;联系失败3次，视为导出成功
-				}
+		; 创建文件路径
+		path := CreateFilePath()
 
-				; 当行数大于微信联系人时，导出完毕跳出
-				If (row - 1 > contactCount)
-					Break
-			}	
-			
-			fileName := Format("{1}\{2}.xlsx", path, A_Now) ;文件名
-			objExcel.ActiveWorkbook.SaveAs(fileName) ;保存文件
-		}
-		catch as e
-		{
-			; 关于 e 对象的更多细节, 请参阅 Error.
-			MsgBox(Type(e) " thrown!`n`nwhat: " e.what "`nfile: " e.file
-				. "`nline: " e.line "`nmessage: " e.message "`nextra: " e.extra,, 16)
-		}
-		finally
-		{
-			try
-			{
-				Run "explore " path
-				objExcel.Quit
-			}
-		}
+		; 保存到Excel
+		SaveContactToXlsx(path, contactCount)
 	}
-	else
+	catch ExcelExportError as excelErr ;Excel导出异常
 	{
-		MsgBox("请确保微信已启动，并且窗口处于打开状态", "未找到微信", "OK Iconx")
+		; Excel导出失败，将导出为csv
+		SaveContactToCsv(path, contactCount)
 	}
+	catch WeChatWinError as weChatWinErr ;微信窗口异常
+	{
+		Return
+	}
+	catch UserTerminateOperationError as UserErr ;用户终止操作
+	{
+		Return
+	}
+	catch as e
+	{
+		; 关于 e 对象的更多细节, 请参阅 Error.
+		MsgBox(Type(e) " thrown!`n`nwhat: " e.what "`nfile: " e.file
+			. "`nline: " e.line "`nmessage: " e.message "`nextra: " e.extra,, 16)
+		Return
+	}
+
+	; 打开文件路径
+	Run "explore " path
+}
+
+; 检测微信窗口是否打开
+CheckWeChatWin()
+{
+	if !WinExist(_ahkWeChatAHKClassName)
+	{
+		MsgBox("未检测到微信窗口，请打开微信，按下【win+c】重新运行", "未找到微信", "OK Iconx")
+		Throw WeChatWinError("Wechat Windows Is Not Active")
+	}
+}
+
+; 定位微信窗口
+SetWeChatWin()
+{
+	CheckWeChatWin()
+	winactivate ; 激活微信窗口
+	winmove _winLocalX,_winLocalY,_winWidth,_winHeight
+	Sleep 100
+
+	; 切换到联系人选项卡
+	click _contactLocalX, _contactLocalY
+	Sleep 100
+
+	; 定位到最后一个微信好友
+	click Format("{1} {2} Middle", _contactListX, _contactListY)
+	Sleep 100
+	send "{End}"
+}
+
+; 创建文件路径
+CreateFilePath()
+{
+	path := StrReplace(Format("{1}\微信好友记录", A_WorkingDir), "\\", "\") ;路径
+	if !DirExist(path) ;不存在该路径则创建
+		DirCreate path
+	Return path
 }
 
 ;设置Excel标题
@@ -177,14 +195,14 @@ GetContactCount()
 	contactCountValue := 0
 	Loop
 	{
-		inputBoxResult := InputBox("请输入你的微信好友数`n`nTips: 可以在联系人界面中通讯录管理中查看`n", "请输入读取联系人的次数")
+		inputBoxResult := InputBox("请输入你的微信好友数，可以在联系人界面中通讯录管理中查看，`n`n初次运行请输入较小的值来测试结果`n`nTips: 在导出期间尽可能避免其他操作`n", "请输入读取联系人的次数")
 		contactCountValue := inputBoxResult.Value
 		result := inputBoxResult.Result
-		If (result = "Cancel")
-			Send "#{Esc}" ;ExitApp
+		if (result = "Cancel")
+			Throw UserTerminateOperationError("GetContactCount User Cancel")	;终止操作
 		Try
 		{
-			If (contactCountValue > 0)
+			if (contactCountValue > 0)
 				Break
 			Else
 				throw Error()
@@ -196,4 +214,86 @@ GetContactCount()
 	}
 
 	Return contactCountValue
+}
+
+; 保存联系人到Xlsx
+SaveContactToXlsx(path, contactCount)
+{
+	objExcel := ""
+	Try 
+	{
+		objExcel := ComObject(_msExcelComObject) ;创建Excel-COM对象
+		objExcel.Workbooks.Add ;创建工作簿
+		SetTitle(&objExcel) ;设置Excel标题
+
+		errorCount := 0 ;失败次数，当连续3次失败后，视为导出完成
+		row := 2 ;第一行为标题，所以这里从第二行开始
+		loop
+		{
+			try
+			{
+				for key, value in GetContactDetail()
+					objExcel.Cells(row, key).Value := value
+				row++ ;插入Excel成功，自增1
+				errorCount := 0 ;成功后失败次数归零，重新计数
+			}
+			catch ; TODO 获取联系人信息失败
+			{
+				if	(++errorCount > 3) ;自增失败次数
+					Break ;联系失败3次，视为导出成功
+			}
+
+			; 当行数大于微信联系人时，导出完毕跳出
+			if (row - 1 > contactCount)
+				Break
+		}	
+		
+		fileName := Format("{1}\{2}.xlsx", path, A_Now) ;文件名
+		objExcel.ActiveWorkbook.SaveAs(fileName) ;保存文件
+	}
+	catch as err
+	{
+		throw ExcelExportError(err.message)
+	}
+	Finally
+	{
+		try
+			objExcel.Quit
+	}
+}
+
+;保存联系人为Csv
+SaveContactToCsv(path, contactCount)
+{
+	fileName := Format("{1}\{2}.csv", path, A_Now) ;文件名
+	csvFile := FileOpen(fileName, "w")
+
+	; 标题
+	csvFile.WriteLine("昵称,签名,地区,微信号,来源,备注")
+	errorCount := 0 ;失败次数，当连续3次失败后，视为导出完成
+	loop
+	{
+		try
+		{
+			csvFile.WriteLine(FormatContactCsv(GetContactDetail()))
+			contactCount-- ;写入成功，自减1
+			errorCount := 0 ;成功后失败次数归零，重新计数
+		}
+		catch ; TODO 获取联系人信息失败
+		{
+			if	(++errorCount > 3) ;自增失败次数
+				Break ;联系失败3次，视为导出成功
+		}
+
+		; 当行数大于微信联系人时，导出完毕跳出
+		if (contactCount <= 0)
+			Break
+	}	
+	
+	csvFile.Close()
+}
+
+FormatContactCsv(map)
+{
+	return Format("{1},{2},{3},{4},{5}", map[1], map[2], map[3], map[4], map[5])
 }
