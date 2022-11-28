@@ -1,4 +1,4 @@
-# 微信联系人导出 (Export WeChat Contact)
+# 微信联系人导出/微信好友导出 (Export WeChat Contact)
 
 基于AHK v2实现。
 
