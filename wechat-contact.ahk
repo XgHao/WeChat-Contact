@@ -140,7 +140,7 @@ GetContactCount()
 	contactCountValue := 0
 	Loop
 	{
-		inputBoxResult := InputBox("请输入你的微信好友数，可以在联系人界面中通讯录管理中查看，`n`n初次运行请输入较小的值来测试结果`n`nTips: 在导出期间尽可能避免其他操作`n", "请输入读取联系人的次数")
+		inputBoxResult := InputBox("请输入你的微信好友数，可以在联系人界面中通讯录管理中查看`n`n初次运行请输入较小的值来测试结果`n`nTips: 在导出期间尽可能避免其他操作`n`nTips: 由于企业微信用户的存在，实际的好友数要大于通讯录管理界面的好友数，所以你在输入时需要加上若干值，比如通讯录管理界面中显示有240个好友，那么你可以输入260`n", "请输入读取联系人的次数", "W400 H400")
 		contactCountValue := inputBoxResult.Value
 		result := inputBoxResult.Result
 		if (result = "Cancel")
@@ -167,78 +167,262 @@ GetContactCount()
 GetContactDetail()
 {
 	A_Clipboard := "" ;清空剪切板
-	sendinput "^a^c" ;全选复制
-	if !ClipWait(0.1, 1) ;等待0.1s超时视为失败，使用老版本
+	Sleep 10 ;缓冲时间
+	sendinput "^a" ;全选
+	Sleep 10 ;缓冲时间
+	SendInput "^c" ;复制
+	if !ClipWait(0.5, 0) ;等待0.5s超时视为失败，使用老版本
 		Throw CopyError("copy error")
 
 	contactMap := Map()	;新建Map对象，存放联系人信息
 	wechatDetailArr := StrSplit(A_Clipboard, "`n") ;通过换行符进行分割
-
 	len := wechatDetailArr.Length
+
 	switch len {
-		case 6:	; 所有信息
+		default:
 		{
-			contactMap[1] := wechatDetailArr[1] ;备注
-			contactMap[2] := wechatDetailArr[2] ;昵称
-			contactMap[3] := wechatDetailArr[3] ;微信ID
-			contactMap[4] := wechatDetailArr[4] ;地区
-			contactMap[5] := wechatDetailArr[6] ;标签
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
+			{
+				if (SubStr(wechatDetailArr[2], 2) = wechatDetailArr[3]) ;有无备注 - 企业名称之前有无信息
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[5] . "    " . wechatDetailArr[6] . "    " . wechatDetailArr[7] . "    " . wechatDetailArr[8] ;企业微信
+				}
+				else
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[3] ;昵称
+					contactMap[3] := wechatDetailArr[5] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+			}
+			else
+			{
+				;默认
+			}
 		}
-		case 5:	; 无标签或无地区
+        
+		case 7: ; 包含描述
 		{
-			if (wechatDetailArr[1] = wechatDetailArr[5]) ; 无标签
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
+			{
+				if (SubStr(wechatDetailArr[2], 2) = wechatDetailArr[3]) ;有无备注 - 企业名称之前有无信息
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[4] . "    " . wechatDetailArr[5] . "    " . wechatDetailArr[6] . "    " . wechatDetailArr[7] ;企业微信
+				}
+				else
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[3] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[6] . "    " . wechatDetailArr[7] ;企业微信
+				}
+			}
+			else
 			{
 				contactMap[1] := wechatDetailArr[1] ;备注
 				contactMap[2] := wechatDetailArr[2] ;昵称
 				contactMap[3] := wechatDetailArr[3] ;微信ID
 				contactMap[4] := wechatDetailArr[4] ;地区
-				contactMap[5] := "-" ;标签
+				contactMap[5] := Format("标签:{1}    描述:{2}", wechatDetailArr[6], wechatDetailArr[7]) ;标签或描述
+				contactMap[6] := "-" ;企业微信
 			}
-			else ;无地区
+		}
+		case 6:	; 所有信息
+		{
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
 			{
-				contactMap[1] := wechatDetailArr[1] ;备注
-				contactMap[2] := wechatDetailArr[2] ;昵称
-				contactMap[3] := wechatDetailArr[3] ;微信ID
-				contactMap[4] := "-" ;地区
-				contactMap[5] := wechatDetailArr[5] ;标签
+				if (SubStr(wechatDetailArr[2], 2) = wechatDetailArr[3]) ;有无备注 - 企业名称之前有无信息
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[4] . "    " . wechatDetailArr[5] . "    " . wechatDetailArr[6] ;企业微信
+
+				}
+				else
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[3] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[6] ;企业微信
+				}
+			}
+			else
+			{
+				if (wechatDetailArr[1] = wechatDetailArr[5]) ; 无标签或描述
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[2] ;昵称
+					contactMap[3] := wechatDetailArr[3] ;微信ID
+					contactMap[4] := wechatDetailArr[4] ;地区
+					contactMap[5] := wechatDetailArr[6] ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+				else ;无地区
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[2] ;昵称
+					contactMap[3] := wechatDetailArr[3] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := Format("标签:{1}    描述:{2}", wechatDetailArr[5], wechatDetailArr[6]) ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+			}
+		}
+		case 5:	; 无标签或无地区
+		{
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
+			{
+				if (SubStr(wechatDetailArr[2], 2) = wechatDetailArr[3]) ;有无备注 - 企业名称之前有无信息
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := wechatDetailArr[3] . "    " . wechatDetailArr[4] . "    " . wechatDetailArr[5] ;企业微信
+				}
+				else
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[3] ;昵称
+					contactMap[3] := wechatDetailArr[5] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+			}
+			else
+			{
+				if (wechatDetailArr[1] = wechatDetailArr[5]) ; 无标签或描述
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[2] ;昵称
+					contactMap[3] := wechatDetailArr[3] ;微信ID
+					contactMap[4] := wechatDetailArr[4] ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+				else if (wechatDetailArr[1] = wechatDetailArr[4]) ; 无地区
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[2] ;昵称
+					contactMap[3] := wechatDetailArr[3] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := wechatDetailArr[5] ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+				else ;无备注
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := wechatDetailArr[3] ;地区
+					contactMap[5] := Format("标签:{1}    描述:{2}", wechatDetailArr[4], wechatDetailArr[5]) ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
 			}
 		}
 		case 4:	;无备注 或 无标签无地区
 		{
-			if (wechatDetailArr[1] = wechatDetailArr[4]) ; 无标签 无地区
-			{
-				contactMap[1] := wechatDetailArr[1] ;备注
-				contactMap[2] := wechatDetailArr[2] ;昵称
-				contactMap[3] := wechatDetailArr[3] ;微信ID
-				contactMap[4] := "-" ;地区
-				contactMap[5] := "-" ;标签
-			}
-			else ;无备注
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
 			{
 				contactMap[1] := "-" ;备注
 				contactMap[2] := wechatDetailArr[1] ;昵称
 				contactMap[3] := wechatDetailArr[2] ;微信ID
-				contactMap[4] := wechatDetailArr[3] ;地区
-				contactMap[5] := wechatDetailArr[4] ;标签
+				contactMap[4] := "-" ;地区
+				contactMap[5] := "-" ;标签或描述
+				contactMap[6] := wechatDetailArr[4] ;企业微信
+			}
+			else
+			{
+				if (wechatDetailArr[1] = wechatDetailArr[4]) ; 无标签 无地区
+				{
+					contactMap[1] := wechatDetailArr[1] ;备注
+					contactMap[2] := wechatDetailArr[2] ;昵称
+					contactMap[3] := wechatDetailArr[3] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+				else ;无备注
+				{
+					if (InStr(wechatDetailArr[3], " ")) ; 包含空格 视为地区
+					{
+						contactMap[1] := "-" ;备注
+						contactMap[2] := wechatDetailArr[1] ;昵称
+						contactMap[3] := wechatDetailArr[2] ;微信ID
+						contactMap[4] := wechatDetailArr[3] ;地区
+						contactMap[5] := wechatDetailArr[4] ;标签或描述
+						contactMap[6] := "-" ;企业微信
+					}
+					else ;无地区
+					{
+						contactMap[1] := "-" ;备注
+						contactMap[2] := wechatDetailArr[1] ;昵称
+						contactMap[3] := wechatDetailArr[2] ;微信ID
+						contactMap[4] := "-" ;地区
+						contactMap[5] := Format("标签:{1}    描述:{2}", wechatDetailArr[3], wechatDetailArr[4]) ;标签或描述
+						contactMap[6] := "-" ;企业微信
+					}
+				}
 			}
 		}
 		case 3:	; 无备注无地区或无备注无标签 TODO: 目前不能区分
 		{
-			if (InStr(wechatDetailArr[3], " ")) ; 包含空格 视为地区
+			; 企业用户
+			if (SubStr(wechatDetailArr[2], 1, 1) = "@")
 			{
 				contactMap[1] := "-" ;备注
 				contactMap[2] := wechatDetailArr[1] ;昵称
 				contactMap[3] := wechatDetailArr[2] ;微信ID
-				contactMap[4] := wechatDetailArr[3] ;地区
-				contactMap[5] := "-" ;标签
+				contactMap[4] := "-" ;地区
+				contactMap[5] := "-" ;标签或描述
+				contactMap[6] := wechatDetailArr[1] ;企业微信
 			}
-			else ;无法区分，地区和标签都设置
+			else
 			{
-				contactMap[1] := "-" ;备注
-				contactMap[2] := wechatDetailArr[1] ;昵称
-				contactMap[3] := wechatDetailArr[2] ;微信ID
-				contactMap[4] := wechatDetailArr[3] ;地区
-				contactMap[5] := wechatDetailArr[3] ;标签
+				if (InStr(wechatDetailArr[3], " ")) ; 包含空格 视为地区
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := wechatDetailArr[3] ;地区
+					contactMap[5] := "-" ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
+				else ;无地区
+				{
+					contactMap[1] := "-" ;备注
+					contactMap[2] := wechatDetailArr[1] ;昵称
+					contactMap[3] := wechatDetailArr[2] ;微信ID
+					contactMap[4] := "-" ;地区
+					contactMap[5] := wechatDetailArr[3] ;标签或描述
+					contactMap[6] := "-" ;企业微信
+				}
 			}
 		}
 		case 2:	; 仅有昵称及ID
@@ -247,7 +431,8 @@ GetContactDetail()
 			contactMap[2] := wechatDetailArr[1] ;昵称
 			contactMap[3] := wechatDetailArr[2] ;微信ID
 			contactMap[4] := "-" ;地区
-			contactMap[5] := "-" ;标签
+			contactMap[5] := "-" ;标签或描述
+			contactMap[6] := "-" ;企业微信
 		}
 	}
 
@@ -267,7 +452,7 @@ SaveContactToCsv(path, contactCount)
 	csvFile := FileOpen(fileName, "w", "UTF-8")
 
 	; 标题
-	csvFile.WriteLine("昵称,微信号,备注,地区,标签")
+	csvFile.WriteLine("昵称,微信号,备注,地区,标签或描述,企业微信额外信息")
 	errorCount := 0 ;失败次数，当连续3次失败后，视为导出完成
 	loop
 	{
@@ -293,7 +478,22 @@ SaveContactToCsv(path, contactCount)
 
 FormatContactCsv(map)
 {
-	return Format("{1},{2},{3},{4},{5}", map[2], map[3], map[1], map[4], map[5])
+	return Format("{1},{2},{3},{4},{5},{6}", FormatCsvItem(map[2]), FormatCsvItem(map[3]), FormatCsvItem(map[1]), FormatCsvItem(map[4]), FormatCsvItem(map[5]), FormatCsvItem(map[6]))
+}
+
+FormatCsvItem(item)
+{
+	if (StrLen(item) = 1)
+	{
+		return item
+	}
+
+	if (SubStr(item,1,1) = "+" || SubStr(item,1,1) = "-" || SubStr(item,1,1) = "=" )
+	{
+		return "'" . item
+	}
+
+	return item
 }
 
 ; 校验是否新版本
