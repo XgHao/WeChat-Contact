@@ -20,3 +20,8 @@ PC端微信会对好友页进行调整，建议尽量使用微信最新版本，
 # 本机测试环境
 - Windows 10 企业版 2004
 - office 365
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=XgHao/WeChat-Contact&type=Date)](https://star-history.com/#XgHao/WeChat-Contact&Date)
