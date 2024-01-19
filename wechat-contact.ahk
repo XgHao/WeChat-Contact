@@ -158,10 +158,16 @@ GetContactDetail()
 {
 	A_Clipboard := "" ;清空剪切板
 	Sleep 10 ;缓冲时间
-	sendinput "^a^c" ;全选复制
+	sendinput "^a" ;全选
 	Sleep 20 ;缓冲时间
-	if !ClipWait(0.5, 0) ;等待1s超时视为失败，使用老版本
+	sendinput "^c" ;复制
+	if !ClipWait(1, 0) ;等待1s超时视为失败
+	{
+		; 移动到上一个
+		send "{Up}"
+		Sleep 50 ;缓存时间等待下个联系人加载
 		Throw CopyError("copy error")
+	}
 
 	data := A_Clipboard
 	contactMap := Map()	;新建Map对象，存放联系人信息
