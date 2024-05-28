@@ -328,7 +328,8 @@ GetContactDetail()
 
 	; 移动到上一个
 	send "{Up}"
-	Sleep 50 ;缓存时间等待下个联系人加载
+	
+	Sleep Random(20, 100) ;缓存时间等待下个联系人加载
 
 	Return contactMap
 }
