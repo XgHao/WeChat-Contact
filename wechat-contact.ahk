@@ -156,17 +156,30 @@ GetContactCount()
 ;获取联系人详情
 GetContactDetail()
 {
-	A_Clipboard := "" ;清空剪切板
-	Sleep 10 ;缓冲时间
-	sendinput "^a" ;全选
-	Sleep 20 ;缓冲时间
-	sendinput "^c" ;复制
-	if !ClipWait(1, 0) ;等待1s超时视为失败
-	{
-		; 移动到上一个
-		send "{Up}"
-		Sleep 50 ;缓存时间等待下个联系人加载
-		Throw CopyError("copy error")
+	totalWaitTime := 2000 ; 总等待时间2s
+	interval := 50 ; 每次等待50ms
+
+	waitTime := 0
+
+	Loop {
+		A_Clipboard := "" ; 清空剪贴板
+		Sleep 10 ; 缓冲时间
+		sendinput "^a" ; 全选
+		Sleep 20 ; 缓冲时间
+		sendinput "^c" ; 复制
+
+		if ClipWait(interval / 1000, 0) ; ClipWait参数为秒，所以Interval需要除以1000
+		{
+			break ; 如果剪贴板更新，则退出循环
+		}
+
+		waitTime += interval
+		if (waitTime >= totalWaitTime) {
+			; 移动到上一个
+			send "{Up}"
+			Sleep 50 ; 缓存时间等待下个联系人加载
+			Throw CopyError("copy error")
+		}
 	}
 
 	data := A_Clipboard
