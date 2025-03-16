@@ -195,7 +195,7 @@ GetContactDetail()
 			contactMap[3] := wechatDetailArr[3] ;微信ID
 			contactMap[4] := wechatDetailArr[4] ;地区
 			contactMap[5] := wechatDetailArr[6] ;标签
-			contactMap[6] := wechatDetailArr[8] ;个性签名
+			contactMap[6] := wechatDetailArr[8] ;电话
 		}
 		case 7:
 		{
@@ -204,11 +204,11 @@ GetContactDetail()
 			contactMap[3] := wechatDetailArr[3] ;微信ID
 			contactMap[4] := wechatDetailArr[4] ;地区
 			contactMap[5] := wechatDetailArr[6] ;标签
-			contactMap[6] := wechatDetailArr[7] ;个性签名
+			contactMap[6] := wechatDetailArr[7] ;电话
 		}
 		case 6:
 		{
-			; 有备注，但是没有地区信息，最后两个可以是【地区，标签，描述，个性签名】中任意两个，默认给最大可能性 【标签，个性签名】
+			; 有备注，但是没有地区信息，最后两个可以是【地区，标签，描述，电话】中任意两个，默认给最大可能性 【标签，电话】
 			if (wechatDetailArr[1] = wechatDetailArr[4])
 			{
 				contactMap[1] := wechatDetailArr[1] ;备注
@@ -216,10 +216,10 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[3] ;微信ID
 				contactMap[4] := "-" ;地区
 				contactMap[5] := wechatDetailArr[5] ;标签
-				contactMap[6] := wechatDetailArr[6] ;个性签名
+				contactMap[6] := wechatDetailArr[6] ;电话
 			}
 
-			; 有备注，地区信息，最后两个可以是【地区，标签，描述，个性签名】中任意一个
+			; 有备注，地区信息，最后两个可以是【地区，标签，描述，电话】中任意一个
 			else if (wechatDetailArr[1] = wechatDetailArr[5])
 			{
 				contactMap[1] := wechatDetailArr[1] ;备注
@@ -229,12 +229,12 @@ GetContactDetail()
 				if (StrLen(wechatDetailArr[6]) >= 5)
 				{
 					contactMap[5] := "-" ;标签
-					contactMap[6] := wechatDetailArr[6] ;个性签名
+					contactMap[6] := wechatDetailArr[6] ;电话
 				}
 				else
 				{
 					contactMap[5] := wechatDetailArr[6] ;标签
-					contactMap[6] := "-" ;个性签名
+					contactMap[6] := "-" ;电话
 				}
 			}
 
@@ -246,12 +246,12 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[2] ;微信ID
 				contactMap[4] := wechatDetailArr[3] ;地区
 				contactMap[5] := wechatDetailArr[4] ;标签
-				contactMap[6] := wechatDetailArr[6] ;个性签名
+				contactMap[6] := wechatDetailArr[6] ;电话
 			}
 		}
 		case 5:
 		{
-			; 有备注，但是没有地区信息，最后一个可能是标签或个性签名，这里根据长度判断
+			; 有备注，但是没有地区信息，最后一个可能是标签或电话，这里根据长度判断
 			if (wechatDetailArr[1] = wechatDetailArr[4])
 			{
 				contactMap[1] := wechatDetailArr[1] ;备注
@@ -261,12 +261,12 @@ GetContactDetail()
 				if (StrLen(wechatDetailArr[5]) >= 5)
 				{
 					contactMap[5] := "-" ;标签
-					contactMap[6] := wechatDetailArr[5] ;个性签名
+					contactMap[6] := wechatDetailArr[5] ;电话
 				}
 				else
 				{
 					contactMap[5] := wechatDetailArr[5] ;标签
-					contactMap[6] := "-" ;个性签名
+					contactMap[6] := "-" ;电话
 				}
 			}
 
@@ -278,10 +278,10 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[3] ;微信ID
 				contactMap[4] := wechatDetailArr[4] ;地区
 				contactMap[5] := "-" ;标签
-				contactMap[6] := "-" ;个性签名
+				contactMap[6] := "-" ;电话
 			}
 
-			; 没有备注，能确定的只有昵称ID，后续可以是【地区，标签，描述，个性签名】中任意三个，默认给最大可能性 【地区，标签，个性签名】
+			; 没有备注，能确定的只有昵称ID，后续可以是【地区，标签，描述，电话】中任意三个，默认给最大可能性 【地区，标签，电话】
 			else
 			{
 				contactMap[1] := "-" ;备注
@@ -289,7 +289,7 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[2] ;微信ID
 				contactMap[4] := wechatDetailArr[3] ;地区
 				contactMap[5] := wechatDetailArr[4] ;标签
-				contactMap[6] := wechatDetailArr[5] ;个性签名
+				contactMap[6] := wechatDetailArr[5] ;电话
 			}
 		}
 		case 4:	; 备注 + 昵称微信ID  或者 昵称
@@ -302,10 +302,10 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[3] ;微信ID
 				contactMap[4] := "-" ;地区
 				contactMap[5] := "-" ;标签
-				contactMap[6] := "-" ;个性签名
+				contactMap[6] := "-" ;电话
 			}
 
-			; 无备注，只能确定昵称及ID，后续可以是【地区，标注，描述，个性签名】中任意连续两个，默认给最大可能性 【地区，个性签名】
+			; 无备注，只能确定昵称及ID，后续可以是【地区，标注，描述，个性签名】中任意连续两个，默认给最大可能性 【地区，电话】
 			if (wechatDetailArr[1] != wechatDetailArr[4])
 			{
 				contactMap[1] := "-" ;备注
@@ -313,7 +313,7 @@ GetContactDetail()
 				contactMap[3] := wechatDetailArr[2] ;微信ID
 				contactMap[4] := wechatDetailArr[3] ;地区
 				contactMap[5] := "-" ;标签
-				contactMap[6] := wechatDetailArr[4] ;个性签名
+				contactMap[6] := wechatDetailArr[4] ;电话
 			}
 		}
 		case 3:	; 昵称，微信ID，地区（无法区分企业微信）
@@ -323,7 +323,7 @@ GetContactDetail()
 			contactMap[3] := wechatDetailArr[2] ;微信ID
 			contactMap[4] := wechatDetailArr[3] ;地区
 			contactMap[5] := "-" ;标签或描述
-			contactMap[6] := "-" ;个性签名
+			contactMap[6] := "-" ;电话
 		}
 		case 2:	; 仅有昵称及微信ID
 		{
@@ -332,7 +332,7 @@ GetContactDetail()
 			contactMap[3] := wechatDetailArr[2] ;微信ID
 			contactMap[4] := "-" ;地区
 			contactMap[5] := "-" ;标签
-			contactMap[6] := "-" ;个性签名
+			contactMap[6] := "-" ;电话
 		}
 	}
 
