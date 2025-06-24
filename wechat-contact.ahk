@@ -50,6 +50,9 @@ msgbox("1.win+c开始导出`r`n2.win+ecs停止", "说明", "OK")
 		; 获取微信联系人数
 		contactCount := GetContactCount()
 
+		; 获取微信联系人数
+		contactDuration := GetContactDuration()
+
 		; 定位微信窗口
 		SetWeChatWin()
 
@@ -57,7 +60,7 @@ msgbox("1.win+c开始导出`r`n2.win+ecs停止", "说明", "OK")
 		path := CreateFilePath()
 
 		; 保存为Csv
-		SaveContactToCsv(path, contactCount)
+		SaveContactToCsv(path, contactCount, contactDuration)
 	}
 	catch WeChatWinError as weChatWinErr ;微信窗口异常
 	{
@@ -151,13 +154,40 @@ GetContactCount()
 	Return contactCountValue
 }
 
+;输入导出间隔
+GetContactDuration()
+{
+	contactDurationValue := 0
+	Loop
+	{
+		inputBoxResult := InputBox("请输入每条联系人之间的导出间隔，单位毫秒(ms)`n`n根据目前反馈：间隔时间太短，会触发风控，导致微信客户端退出登录`n`nTips: 默认间隔为100ms，若遇到退出登录或者时间充裕建议设置1000ms以上`n", "输入导出间隔", "W400 H400")
+		contactDurationValue := inputBoxResult.Value
+		result := inputBoxResult.Result
+		if (result = "Cancel")
+			Throw UserTerminateOperationError("GetContactCount User Cancel")	;终止操作
+		Try
+		{
+			if (contactDurationValue > 0)
+				Break
+			Else
+				throw Error()
+		}
+		catch
+		{
+			MsgBox("无效的数字，请重新输入", "错误", "OK Icon!")
+		}
+	}
+
+	Return contactDurationValue
+}
+
 ;#region 新版本获取方式 [version >= 3.7.0]
 
 ;获取联系人详情
-GetContactDetail()
+GetContactDetail(contactDuration)
 {
-	totalWaitTime := 2000 ; 总等待时间2s
-	interval := 50 ; 每次等待50ms
+	totalWaitTime := 1000 ; 总等待时间1s
+	interval := 100 ; 每次等待100ms
 
 	waitTime := 0
 
@@ -342,13 +372,13 @@ GetContactDetail()
 	; 移动到上一个
 	send "{Up}"
 	
-	Sleep Random(20, 100) ;缓存时间等待下个联系人加载
+	Sleep Random(contactDuration / 2, contactDuration) ;缓存时间等待下个联系人加载
 
 	Return contactMap
 }
 
 ;保存联系人为Csv
-SaveContactToCsv(path, contactCount)
+SaveContactToCsv(path, contactCount, contactDuration)
 {
 	fileName := Format("{1}\{2}.csv", path, A_Now) ;文件名
 	csvFile := FileOpen(fileName, "w", "UTF-8")
@@ -360,7 +390,7 @@ SaveContactToCsv(path, contactCount)
 	{
 		try
 		{
-			csvFile.WriteLine(FormatContactCsv(GetContactDetail()))
+			csvFile.WriteLine(FormatContactCsv(GetContactDetail(contactDuration)))
 			contactCount-- ;写入成功，自减1
 			errorCount := 0 ;成功后失败次数归零，重新计数
 		}
